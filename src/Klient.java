@@ -1,84 +1,114 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.*;
 
 public class Klient extends JFrame {
-    private JTextField loginField;
-    private JPasswordField passwordField;
-    private JTextField regLoginField;
-    private JPasswordField regPasswordField;
+    private JTextField poleLogin;
+    private JPasswordField poleHaslo;
+    private JPasswordField polePowtorzHaslo;
     private String login;
     private String haslo;
 
     public Klient() {
-        Klient self = this;
+        Klient tenObiekt = this;
         setTitle("Logowanie i Rejestracja");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(300, 300);
+        setSize(400, 300);
         setLocationRelativeTo(null);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(5, 2));
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel loginLabel = new JLabel("Login:");
-        loginField = new JTextField();
-        JLabel passwordLabel = new JLabel("Hasło:");
-        passwordField = new JPasswordField();
-        JButton loginButton = new JButton("Zaloguj");
-        JButton regButton = new JButton("Zarejestruj się");
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(10, 10, 10, 10);
 
-        panel.add(loginLabel);
-        panel.add(loginField);
-        panel.add(passwordLabel);
-        panel.add(passwordField);
-        panel.add(loginButton);
-        panel.add(regButton);
+        JLabel etykietaLogin = new JLabel("Login:");
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        panel.add(etykietaLogin, constraints);
+
+        poleLogin = new JTextField(15);
+        constraints.gridx = 1;
+        panel.add(poleLogin, constraints);
+
+        JLabel etykietaHaslo = new JLabel("Hasło:");
+        constraints.gridx = 0;
+        constraints.gridy = 1;
+        panel.add(etykietaHaslo, constraints);
+
+        poleHaslo = new JPasswordField(15);
+        constraints.gridx = 1;
+        panel.add(poleHaslo, constraints);
+
+        JButton przyciskLogowanie = new JButton("Zaloguj");
+        constraints.gridx = 0;
+        constraints.gridy = 2;
+        constraints.gridwidth = 1;
+        constraints.anchor = GridBagConstraints.WEST;
+        panel.add(przyciskLogowanie, constraints);
+
+        JButton przyciskRejestracja = new JButton("Zarejestruj się");
+        constraints.gridx = 1;
+        constraints.anchor = GridBagConstraints.EAST;
+        panel.add(przyciskRejestracja, constraints);
 
         add(panel);
 
-        loginButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                login = loginField.getText();
-                haslo = new String(passwordField.getPassword());
+        przyciskLogowanie.addActionListener(e -> {
+            login = poleLogin.getText();
+            haslo = new String(poleHaslo.getPassword());
 
-                if (sprawdzDaneLogowania(login, haslo)) {
-                    JOptionPane.showMessageDialog(null, "Zalogowano pomyślnie!");
+            if (sprawdzDaneLogowania(login, haslo)) {
+                JOptionPane.showMessageDialog(null, "Zalogowano pomyślnie!");
 
-                    // Tworzymy i wyświetlamy główne okno
-                    PanelKlienta panelKlienta = new PanelKlienta(login); // Przekazanie loginu do panelu klienta
-                    panelKlienta.setVisible(true);
+                // Tworzymy i wyświetlamy główne okno
+                PanelKlienta panelKlienta = new PanelKlienta(login); // Przekazanie loginu do panelu klienta
+                panelKlienta.setVisible(true);
 
-                    // Zamykamy okno logowania
-                    self.dispose();
-                } else {
-                    JOptionPane.showMessageDialog(null, "Nieprawidłowe dane logowania.");
-                }
+                // Zamykamy okno logowania
+                tenObiekt.dispose();
+            } else {
+                JOptionPane.showMessageDialog(null, "Nieprawidłowe dane logowania.");
             }
         });
 
-        regButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String regLogin = JOptionPane.showInputDialog("Podaj nowy login");
-                String regHaslo = JOptionPane.showInputDialog("Podaj nowe hasło");
+        przyciskRejestracja.addActionListener(e -> {
+            JPanel panelRejestracji = new JPanel(new GridLayout(3, 2));
+            JTextField poleRegLogin = new JTextField(15); // Ustalamy długość pola login
+            JPasswordField poleRegHaslo = new JPasswordField();
+            JPasswordField poleRegPowtorzHaslo = new JPasswordField();
+            panelRejestracji.add(new JLabel("Podaj nowy login:"));
+            panelRejestracji.add(poleRegLogin);
+            panelRejestracji.add(new JLabel("Podaj nowe hasło:"));
+            panelRejestracji.add(poleRegHaslo);
+            panelRejestracji.add(new JLabel("Powtórz nowe hasło:"));
+            panelRejestracji.add(poleRegPowtorzHaslo);
+            int wynik = JOptionPane.showConfirmDialog(null, panelRejestracji, "Rejestracja", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-                if (rejestruj(regLogin, regHaslo)) {
-                    JOptionPane.showMessageDialog(null, "Rejestracja pomyślna!");
+            if (wynik == JOptionPane.OK_OPTION) {
+                String regLogin = poleRegLogin.getText();
+                String regHaslo = new String(poleRegHaslo.getPassword());
+                String regPowtorzHaslo = new String(poleRegPowtorzHaslo.getPassword());
+
+                if (regHaslo.equals(regPowtorzHaslo)) {
+                    if (rejestruj(regLogin, regHaslo)) {
+                        JOptionPane.showMessageDialog(null, "Rejestracja pomyślna!");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Rejestracja nieudana.");
+                    }
                 } else {
-                    JOptionPane.showMessageDialog(null, "Rejestracja nieudana.");
+                    JOptionPane.showMessageDialog(null, "Podane hasła nie są identyczne.");
                 }
             }
         });
     }
 
     private boolean sprawdzDaneLogowania(String login, String haslo) {
-        try (
-                Connection connection = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                PreparedStatement statement = connection.prepareStatement(
-                        "SELECT COUNT(*) FROM uzytkownicy WHERE login = ? AND haslo = ?")
-        ) {
+        try (Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM uzytkownicy WHERE login = ? AND haslo = ?")) {
             statement.setString(1, login);
             statement.setString(2, haslo);
 
@@ -96,19 +126,15 @@ public class Klient extends JFrame {
     }
 
     private boolean rejestruj(String login, String haslo) {
-        // Sprawdź czy login i hasło nie są puste
         if (login == null || login.isEmpty() || haslo == null || haslo.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Login i hasło nie mogą być puste.");
             return false;
         }
 
-        // Sprawdź czy taki użytkownik już istnieje
-        try (
-                Connection connection = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                PreparedStatement checkStatement = connection.prepareStatement(
-                        "SELECT COUNT(*) FROM uzytkownicy WHERE login = ?")
-        ) {
+        try (Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+             PreparedStatement checkStatement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM uzytkownicy WHERE login = ?")) {
             checkStatement.setString(1, login);
 
             try (ResultSet resultSet = checkStatement.executeQuery()) {
@@ -125,13 +151,10 @@ public class Klient extends JFrame {
             return false;
         }
 
-        // Dodaj nowego użytkownika
-        try (
-                Connection connection = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                PreparedStatement insertStatement = connection.prepareStatement(
-                        "INSERT INTO uzytkownicy (login, haslo) VALUES (?, ?)")
-        ) {
+        try (Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+             PreparedStatement insertStatement = connection.prepareStatement(
+                     "INSERT INTO uzytkownicy (login, haslo) VALUES (?, ?)")) {
             insertStatement.setString(1, login);
             insertStatement.setString(2, haslo);
             insertStatement.executeUpdate();
@@ -142,13 +165,10 @@ public class Klient extends JFrame {
         }
     }
 
-
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                Klient klient = new Klient();
-                klient.setVisible(true);
-            }
+        SwingUtilities.invokeLater(() -> {
+            Klient klient = new Klient();
+            klient.setVisible(true);
         });
     }
 }

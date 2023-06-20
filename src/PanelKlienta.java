@@ -30,8 +30,9 @@ public class PanelKlienta extends JFrame {
         this.login = login;
         setTitle("Zarządzanie produktami");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(500, 300);
+        setSize(1000, 400);
         setLocationRelativeTo(null);
+        FajniejszyWyglad();
 
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
@@ -82,6 +83,8 @@ public class PanelKlienta extends JFrame {
         buttonEdytujProdukt = new JButton("Edytuj produkt");
         buttonUsunProdukt = new JButton("Usuń produkt");
 
+
+
         filterButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -89,7 +92,7 @@ public class PanelKlienta extends JFrame {
                 if (text.trim().length() == 0) {
                     ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
                 } else {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text));
+                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text));
                 }
             }
         });
@@ -130,6 +133,7 @@ public class PanelKlienta extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 dodajProdukt();
+                aktualizujTabele();
             }
         });
 
@@ -138,6 +142,7 @@ public class PanelKlienta extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 edytujProdukt();
+                aktualizujTabele();
             }
         });
 
@@ -146,6 +151,7 @@ public class PanelKlienta extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 usunProdukt();
+                aktualizujTabele();
             }
         });
 
@@ -171,12 +177,11 @@ public class PanelKlienta extends JFrame {
 
         // Disable the additional CRUD buttons for non-admin users
         if (idUzytkownika != 1) {
-            buttonDodajProdukt.setEnabled(false);
-            buttonEdytujProdukt.setEnabled(false);
-            buttonUsunProdukt.setEnabled(false);
+            buttonDodajProdukt.setVisible(false);
+            buttonEdytujProdukt.setVisible(false);
+            buttonUsunProdukt.setVisible(false);
         }
     }
-
 
     private void dodajProduktDoKoszyka(Produkt produkt) {
         koszyk.add(produkt);
@@ -268,19 +273,154 @@ public class PanelKlienta extends JFrame {
 
     // Method for adding a new product (only for admin user)
     private void dodajProdukt() {
-        // Implement the logic for adding a new product
-        // You can open a new dialog or perform other actions to add a product to the database
+        JTextField nazwaField = new JTextField();
+        JTextField cenaField = new JTextField();
+        JTextField opisField = new JTextField();
+
+        Object[] message = {
+                "Nazwa:", nazwaField,
+                "Cena:", cenaField,
+                "Opis:", opisField
+        };
+
+        boolean isPriceValid;
+        do {
+            int option = JOptionPane.showConfirmDialog(null, message, "Dodaj produkt", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                try {
+                    double cenaProduktu = Double.parseDouble(cenaField.getText());
+
+                    try (Connection connection = DriverManager.getConnection(
+                            "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                         PreparedStatement statement = connection.prepareStatement(
+                                 "INSERT INTO produkty (nazwa, cena, opis) VALUES (?, ?, ?)")
+                    ) {
+                        statement.setString(1, nazwaField.getText());
+                        statement.setDouble(2, cenaProduktu);
+                        statement.setString(3, opisField.getText());
+                        statement.executeUpdate();
+                        JOptionPane.showMessageDialog(this, "Produkt został dodany.");
+                        isPriceValid = true;
+                    } catch (SQLException ex) {
+                        System.out.println("Błąd podczas dodawania produktu: " + ex.getMessage());
+                        isPriceValid = false;
+                    }
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Nieprawidłowa cena produktu. Proszę wprowadzić ponownie.");
+                    isPriceValid = false;
+                }
+            } else {
+                break;
+            }
+        } while (!isPriceValid);
     }
 
     // Method for editing an existing product (only for admin user)
     private void edytujProdukt() {
-        // Implement the logic for editing an existing product
-        // You can open a new dialog or perform other actions to edit a product in the database
+        int selectedRow = tabelaProduktow.getSelectedRow();
+        if (selectedRow >= 0) {
+            int produktId = (int) tableModel.getValueAt(selectedRow, 0);
+
+            JTextField nazwaField = new JTextField((String) tableModel.getValueAt(selectedRow, 1));
+            JTextField cenaField = new JTextField(String.valueOf((double) tableModel.getValueAt(selectedRow, 2)));
+            JTextField opisField = new JTextField((String) tableModel.getValueAt(selectedRow, 3));
+
+            Object[] message = {
+                    "Nazwa:", nazwaField,
+                    "Cena:", cenaField,
+                    "Opis:", opisField
+            };
+
+            boolean isPriceValid;
+            do {
+                int option = JOptionPane.showConfirmDialog(null, message, "Edytuj produkt", JOptionPane.OK_CANCEL_OPTION);
+                if (option == JOptionPane.OK_OPTION) {
+                    try {
+                        double cenaProduktu = Double.parseDouble(cenaField.getText());
+
+                        try (Connection connection = DriverManager.getConnection(
+                                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                             PreparedStatement statement = connection.prepareStatement(
+                                     "UPDATE produkty SET nazwa = ?, cena = ?, opis = ? WHERE id = ?")
+                        ) {
+                            statement.setString(1, nazwaField.getText());
+                            statement.setDouble(2, cenaProduktu);
+                            statement.setString(3, opisField.getText());
+                            statement.setInt(4, produktId);
+                            statement.executeUpdate();
+                            JOptionPane.showMessageDialog(this, "Produkt został zaktualizowany.");
+                            isPriceValid = true;
+                        } catch (SQLException ex) {
+                            System.out.println("Błąd podczas edycji produktu: " + ex.getMessage());
+                            isPriceValid = false;
+                        }
+                    } catch (NumberFormatException e) {
+                        JOptionPane.showMessageDialog(this, "Nieprawidłowa cena produktu. Proszę wprowadzić ponownie.");
+                        isPriceValid = false;
+                    }
+                } else {
+                    break;
+                }
+            } while (!isPriceValid);
+        } else {
+            JOptionPane.showMessageDialog(this, "Nie wybrano żadnego produktu do edycji.");
+        }
     }
 
-    // Method for deleting an existing product (only for admin user)
     private void usunProdukt() {
-        // Implement the logic for deleting an existing product
-        // You can open a confirmation dialog and then remove the product from the database
+        String idProduktuStr = JOptionPane.showInputDialog(this, "Podaj ID produktu do usunięcia:");
+        try {
+            int idProduktu = Integer.parseInt(idProduktuStr);
+            try (Connection connection = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                 PreparedStatement statement = connection.prepareStatement(
+                         "DELETE FROM produkty WHERE id = ?")
+            ) {
+                statement.setInt(1, idProduktu);
+                statement.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Produkt został usunięty.");
+            } catch (SQLException ex) {
+                System.out.println("Błąd podczas usuwania produktu: " + ex.getMessage());
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Nieprawidłowe ID produktu.");
+        }
     }
+
+    private void aktualizujTabele() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try (Connection connection = DriverManager.getConnection(
+                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                     PreparedStatement statement = connection.prepareStatement(
+                             "SELECT * FROM produkty")
+                ) {
+                    ResultSet resultSet = statement.executeQuery();
+                    tableModel.setRowCount(0);
+                    while (resultSet.next()) {
+                        Vector<Object> row = new Vector<Object>();
+                        row.add(resultSet.getInt("id"));
+                        row.add(resultSet.getString("nazwa"));
+                        row.add(resultSet.getDouble("cena"));
+                        row.add(resultSet.getString("opis"));
+                        tableModel.addRow(row);
+                    }
+                } catch (SQLException ex) {
+                    System.out.println("Błąd podczas aktualizacji tabeli: " + ex.getMessage());
+                }
+            }
+        }).start();
+    }
+
+    private void FajniejszyWyglad() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            SwingUtilities.updateComponentTreeUI(this);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
 }

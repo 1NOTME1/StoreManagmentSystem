@@ -6,10 +6,10 @@ public class ProduktDAO {
     private static final String PASSWORD = "root";
 
     public static void dodajProdukt(Produkt produkt, int userId) {
-        if (userId != 1) {
-            System.out.println("Brak uprawnień do dodania produktu.");
-            return;
-        }
+//        if (userId != 1) {
+//            System.out.println("Brak uprawnień do dodania produktu.");
+//            return;
+//        }
 
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD)) {
             String query = "INSERT INTO produkty (nazwa, cena, opis) VALUES (?, ?, ?)";
@@ -52,10 +52,10 @@ public class ProduktDAO {
     }
 
     public static void usunProdukt(int produktId, int userId) {
-        if (userId != 1) {
-            System.out.println("Brak uprawnień do usunięcia produktu.");
-            return;
-        }
+//        if (userId != 1) {
+//            System.out.println("Brak uprawnień do usunięcia produktu.");
+//            return;
+//        }
 
         try (Connection connection = DriverManager.getConnection(URL, USER, PASSWORD)) {
             String query = "DELETE FROM produkty WHERE id = ?";
@@ -75,10 +75,10 @@ public class ProduktDAO {
     }
 
     public static Produkt getProdukt(int produktId, int userId) {
-        if (userId != 1) {
-            System.out.println("Brak uprawnień do przeglądania produktu.");
-            return null;
-        }
+//        if (userId != 1) {
+//            System.out.println("Brak uprawnień do przeglądania produktu.");
+//            return null;
+//        }
 
         Produkt produkt = null;
 
