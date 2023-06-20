@@ -4,9 +4,14 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.sql.*;
+import java.util.UUID;
 import java.util.Vector;
 import java.math.BigDecimal;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
 
 public class PanelKlienta extends JFrame {
     private JTable tabelaProduktow;
@@ -34,6 +39,9 @@ public class PanelKlienta extends JFrame {
         setLocationRelativeTo(null);
         FajniejszyWyglad();
 
+        Vector<Vector<Object>> data = new Vector<Vector<Object>>();
+        Vector<String> columnNames = new Vector<String>();
+
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
              Statement statement = connection.createStatement();
@@ -41,9 +49,6 @@ public class PanelKlienta extends JFrame {
         ) {
             ResultSetMetaData metaData = resultSet.getMetaData();
             int columnCount = metaData.getColumnCount();
-
-            Vector<Vector<Object>> data = new Vector<Vector<Object>>();
-            Vector<String> columnNames = new Vector<String>();
 
             for (int column = 1; column <= columnCount; column++) {
                 columnNames.add(metaData.getColumnName(column));
@@ -62,7 +67,12 @@ public class PanelKlienta extends JFrame {
                 data.add(vector);
             }
 
-            tableModel = new DefaultTableModel(data, columnNames);
+            tableModel = new DefaultTableModel(data, columnNames) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false; // Ustawia wszystkie komórki tabeli jako nieedytowalne
+                }
+            };
             tabelaProduktow = new JTable(tableModel);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -73,7 +83,7 @@ public class PanelKlienta extends JFrame {
 
         JPanel filterPanel = new JPanel();
         filterField = new JTextField(10);
-        filterButton = new JButton("Filtruj");
+        filterButton = new JButton("Szukaj");
         buttonDodajDoKoszyka = new JButton("Dodaj do koszyka");
         buttonZobaczKoszyk = new JButton("Zobacz koszyk");
         buttonZlozZamowienie = new JButton("Złóż zamówienie");
@@ -82,8 +92,6 @@ public class PanelKlienta extends JFrame {
         buttonDodajProdukt = new JButton("Dodaj produkt");
         buttonEdytujProdukt = new JButton("Edytuj produkt");
         buttonUsunProdukt = new JButton("Usuń produkt");
-
-
 
         filterButton.addActionListener(new ActionListener() {
             @Override
@@ -181,6 +189,64 @@ public class PanelKlienta extends JFrame {
             buttonEdytujProdukt.setVisible(false);
             buttonUsunProdukt.setVisible(false);
         }
+
+        // Dodawanie paska narzędzi (JMenuBar)
+        JMenuBar menuBar = new JMenuBar();
+        setJMenuBar(menuBar);
+
+        // Menu "Program"
+        JMenu menuProgram = new JMenu("Program");
+        menuBar.add(menuProgram);
+
+        // Opcja "Zamknij"
+        JMenuItem menuItemZamknij = new JMenuItem("Zamknij");
+        menuItemZamknij.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
+        });
+        menuProgram.add(menuItemZamknij);
+
+        // Menu "Operacje"
+        JMenu menuOperacje = new JMenu("Operacje");
+        menuBar.add(menuOperacje);
+
+        // Opcja "Dodaj" z skrótem klawiszowym Ctrl+D
+        JMenuItem menuItemDodaj = new JMenuItem("Dodaj");
+        menuItemDodaj.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        menuItemDodaj.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dodajProdukt();
+                aktualizujTabele();
+            }
+        });
+        menuOperacje.add(menuItemDodaj);
+
+        // Opcja "Edytuj" z skrótem klawiszowym Ctrl+E
+        JMenuItem menuItemEdytuj = new JMenuItem("Edytuj");
+        menuItemEdytuj.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        menuItemEdytuj.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                edytujProdukt();
+                aktualizujTabele();
+            }
+        });
+        menuOperacje.add(menuItemEdytuj);
+
+        // Opcja "Usuń" z skrótem klawiszowym Ctrl+U
+        JMenuItem menuItemUsun = new JMenuItem("Usuń");
+        menuItemUsun.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        menuItemUsun.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                usunProdukt();
+                aktualizujTabele();
+            }
+        });
+        menuOperacje.add(menuItemUsun);
     }
 
     private void dodajProduktDoKoszyka(Produkt produkt) {
@@ -263,11 +329,43 @@ public class PanelKlienta extends JFrame {
                     statement.setDouble(3, produkt.getCena());
                     statement.executeUpdate();
                 }
+
+                // Generowanie pliku .txt z fakturą
+                generujFakture(idUzytkownika, koszyk);
+
                 JOptionPane.showMessageDialog(this, "Zamówienie zostało złożone.");
                 koszyk.clear(); // Wyczyść koszyk po złożeniu zamówienia
             } catch (SQLException ex) {
                 System.out.println("Błąd podczas złożenia zamówienia: " + ex.getMessage());
             }
+        }
+    }
+
+    private void generujFakture(int idUzytkownika, List<Produkt> koszyk) {
+        String fakturaId = UUID.randomUUID().toString();
+        String nazwaPliku = "faktura_" + fakturaId + ".txt";
+
+        try (FileWriter writer = new FileWriter(nazwaPliku)) {
+            writer.write("Faktura zamówienia:\n\n");
+            writer.write("Identyfikator faktury: " + fakturaId + "\n");
+            writer.write("Zamówienie użytkownika: " + idUzytkownika + "\n");
+            writer.write("Zamówione produkty:\n");
+
+            double lacznaCena = 0.0;
+            int numer = 1;
+            for (Produkt produkt : koszyk) {
+                writer.write(numer + ". " + produkt.getNazwa() + " - " + produkt.getCena() + " zł\n");
+                lacznaCena += produkt.getCena();
+                numer++;
+            }
+
+            writer.write("\nŁączna cena: " + lacznaCena + " zł");
+            writer.write("\n\nDziękujemy za złożenie zamówienia w naszym sklepie!\n");
+            writer.write("Zapraszamy ponownie!\n");
+
+            writer.flush();
+        } catch (IOException ex) {
+            System.out.println("Błąd podczas generowania faktury: " + ex.getMessage());
         }
     }
 
@@ -351,7 +449,7 @@ public class PanelKlienta extends JFrame {
                             JOptionPane.showMessageDialog(this, "Produkt został zaktualizowany.");
                             isPriceValid = true;
                         } catch (SQLException ex) {
-                            System.out.println("Błąd podczas edycji produktu: " + ex.getMessage());
+                            System.out.println("Błąd podczas edytowania produktu: " + ex.getMessage());
                             isPriceValid = false;
                         }
                     } catch (NumberFormatException e) {
@@ -363,60 +461,65 @@ public class PanelKlienta extends JFrame {
                 }
             } while (!isPriceValid);
         } else {
-            JOptionPane.showMessageDialog(this, "Nie wybrano żadnego produktu do edycji.");
+            JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do edycji.");
         }
     }
 
+    // Method for deleting an existing product (only for admin user)
     private void usunProdukt() {
-        String idProduktuStr = JOptionPane.showInputDialog(this, "Podaj ID produktu do usunięcia:");
-        try {
-            int idProduktu = Integer.parseInt(idProduktuStr);
-            try (Connection connection = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                 PreparedStatement statement = connection.prepareStatement(
-                         "DELETE FROM produkty WHERE id = ?")
-            ) {
-                statement.setInt(1, idProduktu);
-                statement.executeUpdate();
-                JOptionPane.showMessageDialog(this, "Produkt został usunięty.");
-            } catch (SQLException ex) {
-                System.out.println("Błąd podczas usuwania produktu: " + ex.getMessage());
+        int selectedRow = tabelaProduktow.getSelectedRow();
+        if (selectedRow >= 0) {
+            int produktId = (int) tableModel.getValueAt(selectedRow, 0);
+            int option = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz usunąć ten produkt?", "Potwierdzenie", JOptionPane.YES_NO_OPTION);
+            if (option == JOptionPane.YES_OPTION) {
+                try (Connection connection = DriverManager.getConnection(
+                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                     PreparedStatement statement = connection.prepareStatement(
+                             "DELETE FROM produkty WHERE id = ?")
+                ) {
+                    statement.setInt(1, produktId);
+                    statement.executeUpdate();
+                    JOptionPane.showMessageDialog(this, "Produkt został usunięty.");
+                } catch (SQLException ex) {
+                    System.out.println("Błąd podczas usuwania produktu: " + ex.getMessage());
+                }
             }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Nieprawidłowe ID produktu.");
+        } else {
+            JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do usunięcia.");
         }
     }
 
     private void aktualizujTabele() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try (Connection connection = DriverManager.getConnection(
-                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                     PreparedStatement statement = connection.prepareStatement(
-                             "SELECT * FROM produkty")
-                ) {
-                    ResultSet resultSet = statement.executeQuery();
-                    tableModel.setRowCount(0);
-                    while (resultSet.next()) {
-                        Vector<Object> row = new Vector<Object>();
-                        row.add(resultSet.getInt("id"));
-                        row.add(resultSet.getString("nazwa"));
-                        row.add(resultSet.getDouble("cena"));
-                        row.add(resultSet.getString("opis"));
-                        tableModel.addRow(row);
+        tableModel.setRowCount(0); // Wyczyść zawartość tabeli
+
+        try (Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT * FROM produkty")
+        ) {
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            while (resultSet.next()) {
+                Vector<Object> vector = new Vector<Object>();
+                for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
+                    Object value = resultSet.getObject(columnIndex);
+                    if (value instanceof BigDecimal) {
+                        vector.add(((BigDecimal) value).doubleValue());
+                    } else {
+                        vector.add(value);
                     }
-                } catch (SQLException ex) {
-                    System.out.println("Błąd podczas aktualizacji tabeli: " + ex.getMessage());
                 }
+                tableModel.addRow(vector);
             }
-        }).start();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void FajniejszyWyglad() {
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            SwingUtilities.updateComponentTreeUI(this);
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
         } catch (Exception e) {
             e.printStackTrace();
         }
