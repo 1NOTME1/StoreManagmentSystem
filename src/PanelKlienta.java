@@ -427,6 +427,10 @@ public class PanelKlienta extends JFrame {
     }
 
     private void dodajProdukt() {
+        if (idUzytkownika != 1) {
+            JOptionPane.showMessageDialog(null, "Brak uprawnień do dodawania produktów.");
+            return;
+        }
         JTextField poleNazwa = new JTextField();
         JTextField poleCena = new JTextField();
         JTextField poleOpis = new JTextField();
@@ -460,6 +464,10 @@ public class PanelKlienta extends JFrame {
     }
 
     private void edytujProdukt() {
+        if (idUzytkownika != 1) {
+            JOptionPane.showMessageDialog(null, "Brak uprawnień do dodawania produktów.");
+            return;
+        }
         int AktwynyWiersz = tabelaProduktow.getSelectedRow();
         if (AktwynyWiersz >= 0) {
             int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
@@ -504,6 +512,10 @@ public class PanelKlienta extends JFrame {
     }
 
     private void usunProdukt() {
+        if (idUzytkownika != 1) {
+            JOptionPane.showMessageDialog(null, "Brak uprawnień do dodawania produktów.");
+            return;
+        }
         int AktwynyWiersz = tabelaProduktow.getSelectedRow();
         if (AktwynyWiersz >= 0) {
             int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
