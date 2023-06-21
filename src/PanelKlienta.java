@@ -23,6 +23,14 @@ public class PanelKlienta extends JFrame {
     private JButton buttonZobaczKoszyk;
     private JButton buttonZlozZamowienie;
 
+    // Utwórz przyciski RadioButton
+    JLabel filterLabel = new JLabel("Filtry:");
+    JRadioButton filterNoneButton = new JRadioButton("Odfiltruj", true);
+    JRadioButton filterByIdButton = new JRadioButton("ID");
+    JRadioButton filterByNameButton = new JRadioButton("Nazwie");
+    JRadioButton filterByPriceButton = new JRadioButton("Cenia");
+    JRadioButton filterByDescriptionButton = new JRadioButton("Opisie");
+
     // Additional CRUD buttons for the admin user
     private JButton buttonDodajProdukt;
     private JButton buttonEdytujProdukt;
@@ -81,7 +89,9 @@ public class PanelKlienta extends JFrame {
         JScrollPane scrollPane = new JScrollPane(tabelaProduktow);
         add(scrollPane, BorderLayout.CENTER);
 
+        JPanel ButtonPanel = new JPanel();
         JPanel filterPanel = new JPanel();
+
         filterField = new JTextField(10);
         filterButton = new JButton("Szukaj");
         buttonDodajDoKoszyka = new JButton("Dodaj do koszyka");
@@ -163,17 +173,85 @@ public class PanelKlienta extends JFrame {
             }
         });
 
-        filterPanel.add(filterField);
-        filterPanel.add(filterButton);
-        filterPanel.add(buttonDodajDoKoszyka);
-        filterPanel.add(buttonZobaczKoszyk);
-        filterPanel.add(buttonZlozZamowienie);
+        ButtonPanel.add(filterField);
+        ButtonPanel.add(filterButton);
+        ButtonPanel.add(buttonDodajDoKoszyka);
+        ButtonPanel.add(buttonZobaczKoszyk);
+        ButtonPanel.add(buttonZlozZamowienie);
 
         // Add the additional CRUD buttons for the admin user
-        filterPanel.add(buttonDodajProdukt);
-        filterPanel.add(buttonEdytujProdukt);
-        filterPanel.add(buttonUsunProdukt);
+        ButtonPanel.add(buttonDodajProdukt);
+        ButtonPanel.add(buttonEdytujProdukt);
+        ButtonPanel.add(buttonUsunProdukt);
 
+        add(ButtonPanel, BorderLayout.NORTH);
+
+        // Dodaj przyciski do grupy, aby umożliwić wybór tylko jednego na raz
+        ButtonGroup filterButtonGroup = new ButtonGroup();
+        filterButtonGroup.add(filterNoneButton);
+        filterButtonGroup.add(filterByIdButton);
+        filterButtonGroup.add(filterByNameButton);
+        filterButtonGroup.add(filterByPriceButton);
+        filterButtonGroup.add(filterByDescriptionButton);
+
+// Akcje do RadioButtonów
+        filterNoneButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Wyłącz filtr
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
+            }
+        });
+        filterByIdButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Filtruj po ID zaznaczony.");  // Dodaję tę linię, aby zobaczyć, czy akcja jest wywoływana
+                String text = filterField.getText();
+                if (text.trim().length() != 0) {
+                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 0));
+                }
+            }
+        });
+
+
+        filterByNameButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = filterField.getText();
+                if (text.trim().length() != 0) {
+                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
+                }
+            }
+        });
+
+        filterByPriceButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = filterField.getText();
+                if (text.trim().length() != 0) {
+                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 2));
+                }
+            }
+        });
+
+        filterByDescriptionButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = filterField.getText();
+                if (text.trim().length() != 0) {
+                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 3));
+                }
+            }
+        });
+
+        filterPanel.add(filterLabel); // dodajemy etykietę najpierw
+        filterPanel.add(filterNoneButton);
+        filterPanel.add(filterByIdButton);
+        filterPanel.add(filterByNameButton);
+        filterPanel.add(filterByPriceButton);
+        filterPanel.add(filterByDescriptionButton);
+
+// Dodaj panel na dole
         add(filterPanel, BorderLayout.SOUTH);
 
         tabelaProduktow.setRowSorter(new TableRowSorter<>(tabelaProduktow.getModel()));
@@ -247,6 +325,27 @@ public class PanelKlienta extends JFrame {
             }
         });
         menuOperacje.add(menuItemUsun);
+
+        // Utwórz i uruchom wątek do odświeżania danych w tabeli co określony interwał czasowy
+        Thread refreshThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(5000); // Interwał odświeżania (5 sekund)
+                        SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                aktualizujTabele();
+                            }
+                        });
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        refreshThread.setDaemon(true);
+        refreshThread.start();
     }
 
     private void dodajProduktDoKoszyka(Produkt produkt) {
@@ -344,32 +443,25 @@ public class PanelKlienta extends JFrame {
     private void generujFakture(int idUzytkownika, List<Produkt> koszyk) {
         String fakturaId = UUID.randomUUID().toString();
         String nazwaPliku = "faktura_" + fakturaId + ".txt";
-
         try (FileWriter writer = new FileWriter(nazwaPliku)) {
-            writer.write("Faktura zamówienia:\n\n");
-            writer.write("Identyfikator faktury: " + fakturaId + "\n");
-            writer.write("Zamówienie użytkownika: " + idUzytkownika + "\n");
-            writer.write("Zamówione produkty:\n");
-
-            double lacznaCena = 0.0;
-            int numer = 1;
+            writer.write("FAKTURA\n\n");
+            writer.write("ID użytkownika: " + idUzytkownika + "\n");
+            writer.write("Zawartość koszyka:\n");
+            double sumaCen = 0.0;
             for (Produkt produkt : koszyk) {
-                writer.write(numer + ". " + produkt.getNazwa() + " - " + produkt.getCena() + " zł\n");
-                lacznaCena += produkt.getCena();
-                numer++;
+                writer.write("Nazwa: " + produkt.getNazwa() + "\n");
+                writer.write("Cena: " + produkt.getCena() + "\n");
+                writer.write("Opis: " + produkt.getOpis() + "\n");
+                writer.write("--------------\n");
+                sumaCen += produkt.getCena();
             }
-
-            writer.write("\nŁączna cena: " + lacznaCena + " zł");
-            writer.write("\n\nDziękujemy za złożenie zamówienia w naszym sklepie!\n");
-            writer.write("Zapraszamy ponownie!\n");
-
+            writer.write("Łączna cena: " + sumaCen + "\n");
             writer.flush();
         } catch (IOException ex) {
             System.out.println("Błąd podczas generowania faktury: " + ex.getMessage());
         }
     }
 
-    // Method for adding a new product (only for admin user)
     private void dodajProdukt() {
         JTextField nazwaField = new JTextField();
         JTextField cenaField = new JTextField();
@@ -381,47 +473,39 @@ public class PanelKlienta extends JFrame {
                 "Opis:", opisField
         };
 
-        boolean isPriceValid;
-        do {
-            int option = JOptionPane.showConfirmDialog(null, message, "Dodaj produkt", JOptionPane.OK_CANCEL_OPTION);
-            if (option == JOptionPane.OK_OPTION) {
-                try {
-                    double cenaProduktu = Double.parseDouble(cenaField.getText());
+        int option = JOptionPane.showConfirmDialog(null, message, "Dodaj produkt", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            String nazwa = nazwaField.getText();
+            String cenaStr = cenaField.getText();
+            double cena = Double.parseDouble(cenaStr);
+            String opis = opisField.getText();
 
-                    try (Connection connection = DriverManager.getConnection(
-                            "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                         PreparedStatement statement = connection.prepareStatement(
-                                 "INSERT INTO produkty (nazwa, cena, opis) VALUES (?, ?, ?)")
-                    ) {
-                        statement.setString(1, nazwaField.getText());
-                        statement.setDouble(2, cenaProduktu);
-                        statement.setString(3, opisField.getText());
-                        statement.executeUpdate();
-                        JOptionPane.showMessageDialog(this, "Produkt został dodany.");
-                        isPriceValid = true;
-                    } catch (SQLException ex) {
-                        System.out.println("Błąd podczas dodawania produktu: " + ex.getMessage());
-                        isPriceValid = false;
-                    }
-                } catch (NumberFormatException e) {
-                    JOptionPane.showMessageDialog(this, "Nieprawidłowa cena produktu. Proszę wprowadzić ponownie.");
-                    isPriceValid = false;
-                }
-            } else {
-                break;
+            try (Connection connection = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                 PreparedStatement statement = connection.prepareStatement(
+                         "INSERT INTO produkty (nazwa, cena, opis) VALUES (?, ?, ?)")
+            ) {
+                statement.setString(1, nazwa);
+                statement.setDouble(2, cena);
+                statement.setString(3, opis);
+                statement.executeUpdate();
+            } catch (SQLException ex) {
+                System.out.println("Błąd podczas dodawania produktu: " + ex.getMessage());
             }
-        } while (!isPriceValid);
+        }
     }
 
-    // Method for editing an existing product (only for admin user)
     private void edytujProdukt() {
         int selectedRow = tabelaProduktow.getSelectedRow();
         if (selectedRow >= 0) {
             int produktId = (int) tableModel.getValueAt(selectedRow, 0);
+            String nazwaProduktu = (String) tableModel.getValueAt(selectedRow, 1);
+            double cenaProduktu = (double) tableModel.getValueAt(selectedRow, 2);
+            String opisProduktu = (String) tableModel.getValueAt(selectedRow, 3);
 
-            JTextField nazwaField = new JTextField((String) tableModel.getValueAt(selectedRow, 1));
-            JTextField cenaField = new JTextField(String.valueOf((double) tableModel.getValueAt(selectedRow, 2)));
-            JTextField opisField = new JTextField((String) tableModel.getValueAt(selectedRow, 3));
+            JTextField nazwaField = new JTextField(nazwaProduktu);
+            JTextField cenaField = new JTextField(String.valueOf(cenaProduktu));
+            JTextField opisField = new JTextField(opisProduktu);
 
             Object[] message = {
                     "Nazwa:", nazwaField,
@@ -429,49 +513,44 @@ public class PanelKlienta extends JFrame {
                     "Opis:", opisField
             };
 
-            boolean isPriceValid;
-            do {
-                int option = JOptionPane.showConfirmDialog(null, message, "Edytuj produkt", JOptionPane.OK_CANCEL_OPTION);
-                if (option == JOptionPane.OK_OPTION) {
-                    try {
-                        double cenaProduktu = Double.parseDouble(cenaField.getText());
+            int option = JOptionPane.showConfirmDialog(null, message, "Edytuj produkt", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String nowaNazwa = nazwaField.getText();
+                String nowaCenaStr = cenaField.getText();
+                double nowaCena = Double.parseDouble(nowaCenaStr);
+                String nowyOpis = opisField.getText();
 
-                        try (Connection connection = DriverManager.getConnection(
-                                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
-                             PreparedStatement statement = connection.prepareStatement(
-                                     "UPDATE produkty SET nazwa = ?, cena = ?, opis = ? WHERE id = ?")
-                        ) {
-                            statement.setString(1, nazwaField.getText());
-                            statement.setDouble(2, cenaProduktu);
-                            statement.setString(3, opisField.getText());
-                            statement.setInt(4, produktId);
-                            statement.executeUpdate();
-                            JOptionPane.showMessageDialog(this, "Produkt został zaktualizowany.");
-                            isPriceValid = true;
-                        } catch (SQLException ex) {
-                            System.out.println("Błąd podczas edytowania produktu: " + ex.getMessage());
-                            isPriceValid = false;
-                        }
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Nieprawidłowa cena produktu. Proszę wprowadzić ponownie.");
-                        isPriceValid = false;
-                    }
-                } else {
-                    break;
+                try (Connection connection = DriverManager.getConnection(
+                        "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
+                     PreparedStatement statement = connection.prepareStatement(
+                             "UPDATE produkty SET nazwa = ?, cena = ?, opis = ? WHERE id = ?")
+                ) {
+                    statement.setString(1, nowaNazwa);
+                    statement.setDouble(2, nowaCena);
+                    statement.setString(3, nowyOpis);
+                    statement.setInt(4, produktId);
+                    statement.executeUpdate();
+                } catch (SQLException ex) {
+                    System.out.println("Błąd podczas edycji produktu: " + ex.getMessage());
                 }
-            } while (!isPriceValid);
+            }
         } else {
             JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do edycji.");
         }
     }
 
-    // Method for deleting an existing product (only for admin user)
+
     private void usunProdukt() {
         int selectedRow = tabelaProduktow.getSelectedRow();
         if (selectedRow >= 0) {
             int produktId = (int) tableModel.getValueAt(selectedRow, 0);
-            int option = JOptionPane.showConfirmDialog(null, "Czy na pewno chcesz usunąć ten produkt?", "Potwierdzenie", JOptionPane.YES_NO_OPTION);
-            if (option == JOptionPane.YES_OPTION) {
+            String nazwaProduktu = (String) tableModel.getValueAt(selectedRow, 1);
+
+            int opcja = JOptionPane.showOptionDialog(this,
+                    "Czy na pewno chcesz usunąć produkt: " + nazwaProduktu + "?",
+                    "Potwierdzenie", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+
+            if (opcja == JOptionPane.YES_OPTION) {
                 try (Connection connection = DriverManager.getConnection(
                         "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
                      PreparedStatement statement = connection.prepareStatement(
@@ -479,7 +558,6 @@ public class PanelKlienta extends JFrame {
                 ) {
                     statement.setInt(1, produktId);
                     statement.executeUpdate();
-                    JOptionPane.showMessageDialog(this, "Produkt został usunięty.");
                 } catch (SQLException ex) {
                     System.out.println("Błąd podczas usuwania produktu: " + ex.getMessage());
                 }
@@ -490,8 +568,7 @@ public class PanelKlienta extends JFrame {
     }
 
     private void aktualizujTabele() {
-        tableModel.setRowCount(0); // Wyczyść zawartość tabeli
-
+        tableModel.setRowCount(0); // Usuń wszystkie wiersze z tabeli
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
              Statement statement = connection.createStatement();
@@ -517,13 +594,22 @@ public class PanelKlienta extends JFrame {
         }
     }
 
-    private void FajniejszyWyglad() {
+    public void FajniejszyWyglad() {
         try {
-            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-        } catch (Exception e) {
-            e.printStackTrace();
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(PanelKlienta.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(PanelKlienta.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(PanelKlienta.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(PanelKlienta.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
     }
-
-
 }

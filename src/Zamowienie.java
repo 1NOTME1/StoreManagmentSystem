@@ -5,8 +5,6 @@ public class Zamowienie {
     private int numerZamowienia;
     private Klient klient;
     private List<Produkt> produkty;
-    // dodatkowe pola i metody
-
     public Zamowienie(int numerZamowienia, Klient klient) {
         this.numerZamowienia = numerZamowienia;
         this.klient = klient;
@@ -16,6 +14,22 @@ public class Zamowienie {
     public void dodajProdukt(Produkt produkt) {
         produkty.add(produkt);
     }
-
-    // getters i setters oraz inne metody
+    public int getNumerZamowienia() {
+        return numerZamowienia;
+    }
+    public void setNumerZamowienia(int numerZamowienia) {
+        this.numerZamowienia = numerZamowienia;
+    }
+    public Klient getKlient() {
+        return klient;
+    }
+    public void setKlient(Klient klient) {
+        this.klient = klient;
+    }
+    public List<Produkt> getProdukty() {
+        return produkty;
+    }
+    public void setProdukty(List<Produkt> produkty) {
+        this.produkty = produkty;
+    }
 }
