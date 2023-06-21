@@ -17,71 +17,71 @@ public class PanelKlienta extends JFrame {
     private JTable tabelaProduktow;
     private String login;
     private int idUzytkownika;
-    private JTextField filterField;
-    private JButton filterButton;
+    private JTextField PoleDoFiltrowania;
+    private JButton filtrButton;
+
+    //Buttony
     private JButton buttonDodajDoKoszyka;
     private JButton buttonZobaczKoszyk;
     private JButton buttonZlozZamowienie;
-
-    // Utwórz przyciski RadioButton
-    JLabel filterLabel = new JLabel("Filtry:");
-    JRadioButton filterNoneButton = new JRadioButton("Odfiltruj", true);
-    JRadioButton filterByIdButton = new JRadioButton("ID");
-    JRadioButton filterByNameButton = new JRadioButton("Nazwie");
-    JRadioButton filterByPriceButton = new JRadioButton("Cenia");
-    JRadioButton filterByDescriptionButton = new JRadioButton("Opisie");
-
-    // Additional CRUD buttons for the admin user
     private JButton buttonDodajProdukt;
     private JButton buttonEdytujProdukt;
     private JButton buttonUsunProdukt;
 
-    private DefaultTableModel tableModel;
+    //RadioButtony
+    JLabel filterLabel = new JLabel("Filtry:");
+    JRadioButton BrakFiltraButton = new JRadioButton("Odfiltruj", true);
+    JRadioButton FIltrIdButton = new JRadioButton("ID");
+    JRadioButton FiltrNazwaButton = new JRadioButton("Nazwie");
+    JRadioButton FiltrCenaButton = new JRadioButton("Cenia");
+    JRadioButton FiltrOpisButton = new JRadioButton("Opisie");
+
+    private DefaultTableModel ModelTabeli;
     private Vector<Produkt> koszyk;
 
     public PanelKlienta(String login) {
         this.login = login;
-        setTitle("Zarządzanie produktami");
+        setTitle("StoreManagmentSystem");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 400);
+        setSize(1000, 500);
         setLocationRelativeTo(null);
         FajniejszyWyglad();
 
-        Vector<Vector<Object>> data = new Vector<Vector<Object>>();
-        Vector<String> columnNames = new Vector<String>();
+        Vector<Vector<Object>> daneTabeli = new Vector<Vector<Object>>();
+        Vector<String> nazwyKolumn = new Vector<String>();
 
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery("SELECT * FROM produkty")
+             ResultSet query = statement.executeQuery("SELECT * FROM produkty")
         ) {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            int columnCount = metaData.getColumnCount();
+            ResultSetMetaData dataQuery = query.getMetaData();
+            int liczbaKolumn = dataQuery.getColumnCount();
 
-            for (int column = 1; column <= columnCount; column++) {
-                columnNames.add(metaData.getColumnName(column));
+            for (int kolumna = 1; kolumna <= liczbaKolumn; kolumna++) {
+                nazwyKolumn.add(dataQuery.getColumnName(kolumna));
             }
 
-            while (resultSet.next()) {
-                Vector<Object> vector = new Vector<Object>();
-                for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
-                    Object value = resultSet.getObject(columnIndex);
-                    if (value instanceof BigDecimal) {
-                        vector.add(((BigDecimal) value).doubleValue());
+            while (query.next()) {
+                Vector<Object> wiersz = new Vector<Object>();
+                for (int kolumna = 1; kolumna <= liczbaKolumn; kolumna++) {
+                    Object wartoscKomorki = query.getObject(kolumna);
+                    if (wartoscKomorki instanceof BigDecimal) {
+                        wiersz.add(((BigDecimal) wartoscKomorki).doubleValue());
                     } else {
-                        vector.add(value);
+                        wiersz.add(wartoscKomorki);
                     }
                 }
-                data.add(vector);
+                daneTabeli.add(wiersz);
             }
 
-            tableModel = new DefaultTableModel(data, columnNames) {
+            ModelTabeli = new DefaultTableModel(daneTabeli, nazwyKolumn) {
                 @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false; // Ustawia wszystkie komórki tabeli jako nieedytowalne
+                public boolean isCellEditable(int wiersz, int kolumna) {
+                    return false;
                 }
             };
-            tabelaProduktow = new JTable(tableModel);
+            tabelaProduktow = new JTable(ModelTabeli);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -89,24 +89,22 @@ public class PanelKlienta extends JFrame {
         JScrollPane scrollPane = new JScrollPane(tabelaProduktow);
         add(scrollPane, BorderLayout.CENTER);
 
-        JPanel ButtonPanel = new JPanel();
-        JPanel filterPanel = new JPanel();
+        JPanel PanelDlaPrzyciskow = new JPanel();
+        JPanel PanelDlaFiltrow = new JPanel();
 
-        filterField = new JTextField(10);
-        filterButton = new JButton("Szukaj");
+        PoleDoFiltrowania = new JTextField(10);
+        filtrButton = new JButton("Szukaj");
         buttonDodajDoKoszyka = new JButton("Dodaj do koszyka");
         buttonZobaczKoszyk = new JButton("Zobacz koszyk");
         buttonZlozZamowienie = new JButton("Złóż zamówienie");
-
-        // Initialize the additional CRUD buttons for the admin user
         buttonDodajProdukt = new JButton("Dodaj produkt");
         buttonEdytujProdukt = new JButton("Edytuj produkt");
         buttonUsunProdukt = new JButton("Usuń produkt");
 
-        filterButton.addActionListener(new ActionListener() {
+        filtrButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String text = filterField.getText();
+                String text = PoleDoFiltrowania.getText();
                 if (text.trim().length() == 0) {
                     ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
                 } else {
@@ -114,39 +112,35 @@ public class PanelKlienta extends JFrame {
                 }
             }
         });
-
         buttonDodajDoKoszyka.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = tabelaProduktow.getSelectedRow();
-                if (selectedRow >= 0) {
-                    int produktId = (int) tableModel.getValueAt(selectedRow, 0);
-                    String nazwaProduktu = (String) tableModel.getValueAt(selectedRow, 1);
-                    double cenaProduktu = (double) tableModel.getValueAt(selectedRow, 2);
+                int AktwynyWiersz = tabelaProduktow.getSelectedRow();
+                if (AktwynyWiersz >= 0) {
+                    int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
+                    String nazwaProduktu = (String) ModelTabeli.getValueAt(AktwynyWiersz, 1);
+                    double cenaProduktu = (double) ModelTabeli.getValueAt(AktwynyWiersz, 2);
                     Produkt produkt = new Produkt(produktId, nazwaProduktu, cenaProduktu, "");
                     dodajProduktDoKoszyka(produkt);
                     JOptionPane.showMessageDialog(null, "Produkt dodany do koszyka: " + nazwaProduktu);
                 } else {
-                    JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do dodania do koszyka.");
+                    JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do dodania do koszyka!");
                 }
             }
         });
-
         buttonZobaczKoszyk.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 pokazKoszyk();
             }
         });
-
         buttonZlozZamowienie.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 zlozZamowienie();
             }
         });
-
-        // ActionListener for the "Dodaj produkt" button (only for admin user)
+//////////////////////////////////////////////////////// TYLKO DLA ADMINA //////////////////////////////////////////////////////////////////////////////////
         buttonDodajProdukt.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -154,8 +148,6 @@ public class PanelKlienta extends JFrame {
                 aktualizujTabele();
             }
         });
-
-        // ActionListener for the "Edytuj produkt" button (only for admin user)
         buttonEdytujProdukt.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -163,8 +155,6 @@ public class PanelKlienta extends JFrame {
                 aktualizujTabele();
             }
         });
-
-        // ActionListener for the "Usuń produkt" button (only for admin user)
         buttonUsunProdukt.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -173,110 +163,92 @@ public class PanelKlienta extends JFrame {
             }
         });
 
-        ButtonPanel.add(filterField);
-        ButtonPanel.add(filterButton);
-        ButtonPanel.add(buttonDodajDoKoszyka);
-        ButtonPanel.add(buttonZobaczKoszyk);
-        ButtonPanel.add(buttonZlozZamowienie);
+        PanelDlaPrzyciskow.add(PoleDoFiltrowania);
+        PanelDlaPrzyciskow.add(filtrButton);
+        PanelDlaPrzyciskow.add(buttonDodajDoKoszyka);
+        PanelDlaPrzyciskow.add(buttonZobaczKoszyk);
+        PanelDlaPrzyciskow.add(buttonZlozZamowienie);
+        PanelDlaPrzyciskow.add(buttonDodajProdukt);
+        PanelDlaPrzyciskow.add(buttonEdytujProdukt);
+        PanelDlaPrzyciskow.add(buttonUsunProdukt);
 
-        // Add the additional CRUD buttons for the admin user
-        ButtonPanel.add(buttonDodajProdukt);
-        ButtonPanel.add(buttonEdytujProdukt);
-        ButtonPanel.add(buttonUsunProdukt);
+        add(PanelDlaPrzyciskow, BorderLayout.NORTH);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        add(ButtonPanel, BorderLayout.NORTH);
+        ButtonGroup filtrButtonGroup = new ButtonGroup();
+        filtrButtonGroup.add(BrakFiltraButton);
+        filtrButtonGroup.add(FIltrIdButton);
+        filtrButtonGroup.add(FiltrNazwaButton);
+        filtrButtonGroup.add(FiltrCenaButton);
+        filtrButtonGroup.add(FiltrOpisButton);
 
-        // Dodaj przyciski do grupy, aby umożliwić wybór tylko jednego na raz
-        ButtonGroup filterButtonGroup = new ButtonGroup();
-        filterButtonGroup.add(filterNoneButton);
-        filterButtonGroup.add(filterByIdButton);
-        filterButtonGroup.add(filterByNameButton);
-        filterButtonGroup.add(filterByPriceButton);
-        filterButtonGroup.add(filterByDescriptionButton);
-
-// Akcje do RadioButtonów
-        filterNoneButton.addActionListener(new ActionListener() {
+        BrakFiltraButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Wyłącz filtr
                 ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
             }
         });
-        filterByIdButton.addActionListener(new ActionListener() {
+        FIltrIdButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Filtruj po ID zaznaczony.");  // Dodaję tę linię, aby zobaczyć, czy akcja jest wywoływana
-                String text = filterField.getText();
+                String text = PoleDoFiltrowania.getText();
                 if (text.trim().length() != 0) {
                     ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 0));
                 }
             }
         });
-
-
-        filterByNameButton.addActionListener(new ActionListener() {
+        FiltrNazwaButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String text = filterField.getText();
+                String text = PoleDoFiltrowania.getText();
                 if (text.trim().length() != 0) {
                     ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
                 }
             }
         });
-
-        filterByPriceButton.addActionListener(new ActionListener() {
+        FiltrCenaButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String text = filterField.getText();
+                String text = PoleDoFiltrowania.getText();
                 if (text.trim().length() != 0) {
                     ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 2));
                 }
             }
         });
-
-        filterByDescriptionButton.addActionListener(new ActionListener() {
+        FiltrOpisButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String text = filterField.getText();
+                String text = PoleDoFiltrowania.getText();
                 if (text.trim().length() != 0) {
                     ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 3));
                 }
             }
         });
 
-        filterPanel.add(filterLabel); // dodajemy etykietę najpierw
-        filterPanel.add(filterNoneButton);
-        filterPanel.add(filterByIdButton);
-        filterPanel.add(filterByNameButton);
-        filterPanel.add(filterByPriceButton);
-        filterPanel.add(filterByDescriptionButton);
-
-// Dodaj panel na dole
-        add(filterPanel, BorderLayout.SOUTH);
+        PanelDlaFiltrow.add(filterLabel);
+        PanelDlaFiltrow.add(BrakFiltraButton);
+        PanelDlaFiltrow.add(FIltrIdButton);
+        PanelDlaFiltrow.add(FiltrNazwaButton);
+        PanelDlaFiltrow.add(FiltrCenaButton);
+        PanelDlaFiltrow.add(FiltrOpisButton);
+        add(PanelDlaFiltrow, BorderLayout.SOUTH);
 
         tabelaProduktow.setRowSorter(new TableRowSorter<>(tabelaProduktow.getModel()));
-
         koszyk = new Vector<Produkt>();
-
-        // Pobierz ID użytkownika na podstawie jego loginu
         idUzytkownika = pobierzIdUzytkownika(login);
 
-        // Disable the additional CRUD buttons for non-admin users
         if (idUzytkownika != 1) {
             buttonDodajProdukt.setVisible(false);
             buttonEdytujProdukt.setVisible(false);
             buttonUsunProdukt.setVisible(false);
         }
 
-        // Dodawanie paska narzędzi (JMenuBar)
         JMenuBar menuBar = new JMenuBar();
         setJMenuBar(menuBar);
 
-        // Menu "Program"
         JMenu menuProgram = new JMenu("Program");
         menuBar.add(menuProgram);
 
-        // Opcja "Zamknij"
         JMenuItem menuItemZamknij = new JMenuItem("Zamknij");
         menuItemZamknij.addActionListener(new ActionListener() {
             @Override
@@ -286,13 +258,11 @@ public class PanelKlienta extends JFrame {
         });
         menuProgram.add(menuItemZamknij);
 
-        // Menu "Operacje"
         JMenu menuOperacje = new JMenu("Operacje");
         menuBar.add(menuOperacje);
 
-        // Opcja "Dodaj" z skrótem klawiszowym Ctrl+D
         JMenuItem menuItemDodaj = new JMenuItem("Dodaj");
-        menuItemDodaj.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        menuItemDodaj.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         menuItemDodaj.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -302,9 +272,8 @@ public class PanelKlienta extends JFrame {
         });
         menuOperacje.add(menuItemDodaj);
 
-        // Opcja "Edytuj" z skrótem klawiszowym Ctrl+E
         JMenuItem menuItemEdytuj = new JMenuItem("Edytuj");
-        menuItemEdytuj.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        menuItemEdytuj.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         menuItemEdytuj.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -314,9 +283,8 @@ public class PanelKlienta extends JFrame {
         });
         menuOperacje.add(menuItemEdytuj);
 
-        // Opcja "Usuń" z skrótem klawiszowym Ctrl+U
         JMenuItem menuItemUsun = new JMenuItem("Usuń");
-        menuItemUsun.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        menuItemUsun.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         menuItemUsun.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -326,13 +294,12 @@ public class PanelKlienta extends JFrame {
         });
         menuOperacje.add(menuItemUsun);
 
-        // Utwórz i uruchom wątek do odświeżania danych w tabeli co określony interwał czasowy
         Thread refreshThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true) {
                     try {
-                        Thread.sleep(5000); // Interwał odświeżania (5 sekund)
+                        Thread.sleep(5000);
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
                                 aktualizujTabele();
@@ -347,11 +314,9 @@ public class PanelKlienta extends JFrame {
         refreshThread.setDaemon(true);
         refreshThread.start();
     }
-
     private void dodajProduktDoKoszyka(Produkt produkt) {
         koszyk.add(produkt);
     }
-
     private void pokazKoszyk() {
         if (koszyk.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Koszyk jest pusty.");
@@ -367,34 +332,33 @@ public class PanelKlienta extends JFrame {
                 sb.append("Nazwa: ").append(produkt.getNazwa()).append("\n");
                 sb.append("Cena: ").append(produkt.getCena()).append("\n");
                 sb.append("Opis: ").append(produkt.getOpis()).append("\n");
-                sb.append("--------------\n");
+                sb.append("----------------------------------------------------------------\n");
 
                 sumaCen += produkt.getCena();
             }
 
-            sb.append("Łączna cena: ").append(sumaCen).append("\n");
+            sb.append("Łączna cena: ").append(sumaCen).append(" zł\n");
 
-            int opcja = JOptionPane.showOptionDialog(this, sb.toString(), "Koszyk",
+            int option = JOptionPane.showOptionDialog(this, sb.toString(), "Koszyk",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
                     new String[]{"Usuń z koszyka", "Anuluj"}, null);
 
-            if (opcja == 0) {
-                String indeksStr = JOptionPane.showInputDialog(this, "Podaj indeks produktu do usunięcia:");
+            if (option == 0) {
+                String UserIndex = JOptionPane.showInputDialog(this, "Podaj indeks produktu do usunięcia:");
                 try {
-                    int indeks = Integer.parseInt(indeksStr);
-                    if (indeks >= 0 && indeks < koszyk.size()) {
-                        koszyk.remove(indeks);
+                    int index = Integer.parseInt(UserIndex);
+                    if (index >= 0 && index < koszyk.size()) {
+                        koszyk.remove(index);
                         JOptionPane.showMessageDialog(this, "Produkt został usunięty z koszyka.");
                     } else {
-                        JOptionPane.showMessageDialog(this, "Nieprawidłowy indeks produktu.");
+                        JOptionPane.showMessageDialog(this, "Nieprawidłowy indeks produktu!");
                     }
                 } catch (NumberFormatException e) {
-                    JOptionPane.showMessageDialog(this, "Nieprawidłowy indeks produktu.");
+                    JOptionPane.showMessageDialog(this, "Nieprawidłowy indeks produktu!");
                 }
             }
         }
     }
-
     private int pobierzIdUzytkownika(String login) {
         int id = 0;
         try (Connection connection = DriverManager.getConnection(
@@ -403,9 +367,9 @@ public class PanelKlienta extends JFrame {
                      "SELECT id FROM uzytkownicy WHERE login = ?")
         ) {
             statement.setString(1, login);
-            ResultSet resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                id = resultSet.getInt("id");
+            ResultSet query = statement.executeQuery();
+            if (query.next()) {
+                id = query.getInt("id");
             }
         } catch (SQLException ex) {
             System.out.println("Błąd podczas pobierania ID użytkownika: " + ex.getMessage());
@@ -428,12 +392,10 @@ public class PanelKlienta extends JFrame {
                     statement.setDouble(3, produkt.getCena());
                     statement.executeUpdate();
                 }
-
-                // Generowanie pliku .txt z fakturą
                 generujFakture(idUzytkownika, koszyk);
 
-                JOptionPane.showMessageDialog(this, "Zamówienie zostało złożone.");
-                koszyk.clear(); // Wyczyść koszyk po złożeniu zamówienia
+                JOptionPane.showMessageDialog(this, "Zamówienie zostało złożone pomyślnie.");
+                koszyk.clear();
             } catch (SQLException ex) {
                 System.out.println("Błąd podczas złożenia zamówienia: " + ex.getMessage());
             }
@@ -452,10 +414,13 @@ public class PanelKlienta extends JFrame {
                 writer.write("Nazwa: " + produkt.getNazwa() + "\n");
                 writer.write("Cena: " + produkt.getCena() + "\n");
                 writer.write("Opis: " + produkt.getOpis() + "\n");
-                writer.write("--------------\n");
+                writer.write("----------------------------------------------------------------");
                 sumaCen += produkt.getCena();
             }
-            writer.write("Łączna cena: " + sumaCen + "\n");
+            writer.write("Łączna cena: " + sumaCen + "\n\n");
+            writer.write("Dziękujemy za zakupy!\n");
+            writer.write("Prosimy o dokonanie płatności w ciągu 14 dni.\n");
+            writer.write("W razie pytań prosimy o kontakt e-mail: storemanagment@system.com\n");
             writer.flush();
         } catch (IOException ex) {
             System.out.println("Błąd podczas generowania faktury: " + ex.getMessage());
@@ -463,22 +428,22 @@ public class PanelKlienta extends JFrame {
     }
 
     private void dodajProdukt() {
-        JTextField nazwaField = new JTextField();
-        JTextField cenaField = new JTextField();
-        JTextField opisField = new JTextField();
+        JTextField poleNazwa = new JTextField();
+        JTextField poleCena = new JTextField();
+        JTextField poleOpis = new JTextField();
 
-        Object[] message = {
-                "Nazwa:", nazwaField,
-                "Cena:", cenaField,
-                "Opis:", opisField
+        Object[] polaFormularza = {
+                "Nazwa:", poleNazwa,
+                "Cena:", poleCena,
+                "Opis:", poleOpis
         };
 
-        int option = JOptionPane.showConfirmDialog(null, message, "Dodaj produkt", JOptionPane.OK_CANCEL_OPTION);
+        int option = JOptionPane.showConfirmDialog(null, polaFormularza, "Dodaj produkt", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
-            String nazwa = nazwaField.getText();
-            String cenaStr = cenaField.getText();
+            String nazwa = poleNazwa.getText();
+            String cenaStr = poleCena.getText();
             double cena = Double.parseDouble(cenaStr);
-            String opis = opisField.getText();
+            String opis = poleOpis.getText();
 
             try (Connection connection = DriverManager.getConnection(
                     "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
@@ -496,29 +461,29 @@ public class PanelKlienta extends JFrame {
     }
 
     private void edytujProdukt() {
-        int selectedRow = tabelaProduktow.getSelectedRow();
-        if (selectedRow >= 0) {
-            int produktId = (int) tableModel.getValueAt(selectedRow, 0);
-            String nazwaProduktu = (String) tableModel.getValueAt(selectedRow, 1);
-            double cenaProduktu = (double) tableModel.getValueAt(selectedRow, 2);
-            String opisProduktu = (String) tableModel.getValueAt(selectedRow, 3);
+        int AktwynyWiersz = tabelaProduktow.getSelectedRow();
+        if (AktwynyWiersz >= 0) {
+            int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
+            String nazwaProduktu = (String) ModelTabeli.getValueAt(AktwynyWiersz, 1);
+            double cenaProduktu = (double) ModelTabeli.getValueAt(AktwynyWiersz, 2);
+            String opisProduktu = (String) ModelTabeli.getValueAt(AktwynyWiersz, 3);
 
-            JTextField nazwaField = new JTextField(nazwaProduktu);
-            JTextField cenaField = new JTextField(String.valueOf(cenaProduktu));
-            JTextField opisField = new JTextField(opisProduktu);
+            JTextField poleNazwa = new JTextField(nazwaProduktu);
+            JTextField poleCena = new JTextField(String.valueOf(cenaProduktu));
+            JTextField poleOpis = new JTextField(opisProduktu);
 
-            Object[] message = {
-                    "Nazwa:", nazwaField,
-                    "Cena:", cenaField,
-                    "Opis:", opisField
+            Object[] polaFormularza = {
+                    "Nazwa:", poleNazwa,
+                    "Cena:", poleCena,
+                    "Opis:", poleOpis
             };
 
-            int option = JOptionPane.showConfirmDialog(null, message, "Edytuj produkt", JOptionPane.OK_CANCEL_OPTION);
+            int option = JOptionPane.showConfirmDialog(null, polaFormularza, "Edytuj produkt", JOptionPane.OK_CANCEL_OPTION);
             if (option == JOptionPane.OK_OPTION) {
-                String nowaNazwa = nazwaField.getText();
-                String nowaCenaStr = cenaField.getText();
+                String nowaNazwa = poleNazwa.getText();
+                String nowaCenaStr = poleCena.getText();
                 double nowaCena = Double.parseDouble(nowaCenaStr);
-                String nowyOpis = opisField.getText();
+                String nowyOpis = poleOpis.getText();
 
                 try (Connection connection = DriverManager.getConnection(
                         "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
@@ -539,18 +504,17 @@ public class PanelKlienta extends JFrame {
         }
     }
 
-
     private void usunProdukt() {
-        int selectedRow = tabelaProduktow.getSelectedRow();
-        if (selectedRow >= 0) {
-            int produktId = (int) tableModel.getValueAt(selectedRow, 0);
-            String nazwaProduktu = (String) tableModel.getValueAt(selectedRow, 1);
+        int AktwynyWiersz = tabelaProduktow.getSelectedRow();
+        if (AktwynyWiersz >= 0) {
+            int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
+            String nazwaProduktu = (String) ModelTabeli.getValueAt(AktwynyWiersz, 1);
 
-            int opcja = JOptionPane.showOptionDialog(this,
+            int option = JOptionPane.showOptionDialog(this,
                     "Czy na pewno chcesz usunąć produkt: " + nazwaProduktu + "?",
                     "Potwierdzenie", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
 
-            if (opcja == JOptionPane.YES_OPTION) {
+            if (option == JOptionPane.YES_OPTION) {
                 try (Connection connection = DriverManager.getConnection(
                         "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
                      PreparedStatement statement = connection.prepareStatement(
@@ -568,26 +532,26 @@ public class PanelKlienta extends JFrame {
     }
 
     private void aktualizujTabele() {
-        tableModel.setRowCount(0); // Usuń wszystkie wiersze z tabeli
+        ModelTabeli.setRowCount(0);
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery("SELECT * FROM produkty")
+             ResultSet query = statement.executeQuery("SELECT * FROM produkty")
         ) {
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            int columnCount = metaData.getColumnCount();
+            ResultSetMetaData dataQuery = query.getMetaData();
+            int liczbaKolumn = dataQuery.getColumnCount();
 
-            while (resultSet.next()) {
-                Vector<Object> vector = new Vector<Object>();
-                for (int columnIndex = 1; columnIndex <= columnCount; columnIndex++) {
-                    Object value = resultSet.getObject(columnIndex);
-                    if (value instanceof BigDecimal) {
-                        vector.add(((BigDecimal) value).doubleValue());
+            while (query.next()) {
+                Vector<Object> wiersz = new Vector<Object>();
+                for (int kolumna = 1; kolumna <= liczbaKolumn; kolumna++) {
+                    Object wartoscKomorki = query.getObject(kolumna);
+                    if (wartoscKomorki instanceof BigDecimal) {
+                        wiersz.add(((BigDecimal) wartoscKomorki).doubleValue());
                     } else {
-                        vector.add(value);
+                        wiersz.add(wartoscKomorki);
                     }
                 }
-                tableModel.addRow(vector);
+                ModelTabeli.addRow(wiersz);
             }
         } catch (SQLException e) {
             e.printStackTrace();

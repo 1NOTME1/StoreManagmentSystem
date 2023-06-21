@@ -1,7 +1,6 @@
 import java.sql.*;
 
 public class ProduktDAO extends GenericDAO<Produkt> {
-
     @Override
     public void dodaj(Produkt produkt, int userId) {
         try (Connection connection = getConnection()) {
@@ -17,34 +16,25 @@ public class ProduktDAO extends GenericDAO<Produkt> {
             } else {
                 System.out.println("Nie udało się dodać produktu");
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
     @Override
     public void aktualizuj(Produkt produkt, int userId) {
-        if (userId != 1) {
-            System.out.println("Brak uprawnień do aktualizacji produktu.");
-            return;
-        }
-
         try (Connection conn = getConnection()) {
             String query = "UPDATE produkty SET nazwa = ?, cena = ?, opis = ? WHERE id = ?";
-            PreparedStatement stmt = conn.prepareStatement(query);
-            stmt.setString(1, produkt.getNazwa());
-            stmt.setDouble(2, produkt.getCena());
-            stmt.setString(3, produkt.getOpis());
-            stmt.setInt(4, produkt.getId());
-
-            stmt.executeUpdate();
+            PreparedStatement preparedStatement = conn.prepareStatement(query);
+            preparedStatement.setString(1, produkt.getNazwa());
+            preparedStatement.setDouble(2, produkt.getCena());
+            preparedStatement.setString(3, produkt.getOpis());
+            preparedStatement.setInt(4, produkt.getId());
+            preparedStatement.executeUpdate();
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
     @Override
     public void usun(int produktId, int userId) {
         try (Connection connection = getConnection()) {
@@ -63,7 +53,6 @@ public class ProduktDAO extends GenericDAO<Produkt> {
             e.printStackTrace();
         }
     }
-
     @Override
     public Produkt get(int produktId, int userId) {
         Produkt produkt = null;
@@ -85,7 +74,6 @@ public class ProduktDAO extends GenericDAO<Produkt> {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return produkt;
     }
 }
