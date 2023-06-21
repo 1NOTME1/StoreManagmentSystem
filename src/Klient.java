@@ -136,7 +136,7 @@ public class Klient extends JFrame {
 
     private boolean rejestruj(String login, String haslo) {
         if (login == null || login.isEmpty() || haslo == null || haslo.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Login i hasło nie mogą być puste.", "Błąd rejestracji", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Login i hasło nie mogą być puste.");
             return false;
         }
 
@@ -146,11 +146,11 @@ public class Klient extends JFrame {
                      "SELECT COUNT(*) FROM uzytkownicy WHERE login = ?")) {
             checkStatement.setString(1, login);
 
-            try (ResultSet query = checkStatement.executeQuery()) {
-                if (query.next()) {
-                    int count = query.getInt(1);
+            try (ResultSet resultSet = checkStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    int count = resultSet.getInt(1);
                     if (count > 0) {
-                        JOptionPane.showMessageDialog(null, "Taki użytkownik już istnieje.", "Błąd rejestracji", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(null, "Taki użytkownik już istnieje.");
                         return false;
                     }
                 }
@@ -161,7 +161,7 @@ public class Klient extends JFrame {
         }
 
         try (Connection connection = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/storemanagementsystemdb", "root", "root");
+                "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
              PreparedStatement insertStatement = connection.prepareStatement(
                      "INSERT INTO uzytkownicy (login, haslo) VALUES (?, ?)")) {
             insertStatement.setString(1, login);
@@ -173,6 +173,7 @@ public class Klient extends JFrame {
             return false;
         }
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

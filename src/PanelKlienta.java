@@ -330,14 +330,13 @@ public class PanelKlienta extends JFrame {
                 Produkt produkt = koszyk.get(i);
                 sb.append("Indeks: ").append(i).append("\n");
                 sb.append("Nazwa: ").append(produkt.getNazwa()).append("\n");
-                sb.append("Cena: ").append(produkt.getCena()).append("\n");
-                sb.append("Opis: ").append(produkt.getOpis()).append("\n");
+                sb.append("Cena: ").append(String.format("%.2f", produkt.getCena())).append("\n");
                 sb.append("----------------------------------------------------------------\n");
 
                 sumaCen += produkt.getCena();
             }
 
-            sb.append("Łączna cena: ").append(sumaCen).append(" zł\n");
+            sb.append("Łączna cena: ").append(String.format("%.2f", sumaCen)).append(" zł\n");
 
             int option = JOptionPane.showOptionDialog(this, sb.toString(), "Koszyk",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
@@ -359,6 +358,7 @@ public class PanelKlienta extends JFrame {
             }
         }
     }
+
     private int pobierzIdUzytkownika(String login) {
         int id = 0;
         try (Connection connection = DriverManager.getConnection(
@@ -413,8 +413,7 @@ public class PanelKlienta extends JFrame {
             for (Produkt produkt : koszyk) {
                 writer.write("Nazwa: " + produkt.getNazwa() + "\n");
                 writer.write("Cena: " + produkt.getCena() + "\n");
-                writer.write("Opis: " + produkt.getOpis() + "\n");
-                writer.write("----------------------------------------------------------------");
+                writer.write("----------------------------------------------------------------\n");
                 sumaCen += produkt.getCena();
             }
             writer.write("Łączna cena: " + sumaCen + "\n\n");
