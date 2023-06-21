@@ -1,12 +1,8 @@
 public class Produkt {
     private int id;
-    private String nazwa;
+    private String nazwa, opis;
     private double cena;
-    private String opis;
-
-    public Produkt() {
-        // Konstruktor domyślny
-    }
+    public Produkt() {}
 
     public Produkt(int id, String nazwa, double cena, String opis) {
         this.id = id;
