@@ -13,6 +13,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Klasa PanelKlienta reprezentuje interfejs graficzny dla klienta w systemie.
+ * Zawiera tabelę produktów, przyciski oraz funkcje związane z obsługą zamówień i produktów.
+ * Pozwala na dodawanie produktów do koszyka, przeglądanie koszyka, składanie zamówień oraz dodawanie, edytowanie i usuwanie produktów (tylko dla administratora).
+ * Klasa dziedziczy po klasie JFrame.
+ *
+ * @author Michał Kwaśniewski
+ * @version 1.0.0
+ */
 public class PanelKlienta extends JFrame {
     private JTable tabelaProduktow;
     private String login;
@@ -21,12 +30,7 @@ public class PanelKlienta extends JFrame {
     private JButton filtrButton;
 
     //Buttony
-    private JButton buttonDodajDoKoszyka;
-    private JButton buttonZobaczKoszyk;
-    private JButton buttonZlozZamowienie;
-    private JButton buttonDodajProdukt;
-    private JButton buttonEdytujProdukt;
-    private JButton buttonUsunProdukt;
+    private JButton buttonDodajDoKoszyka, buttonZobaczKoszyk, buttonZlozZamowienie, buttonDodajProdukt, buttonEdytujProdukt, buttonUsunProdukt;
 
     //RadioButtony
     JLabel filterLabel = new JLabel("Filtry:");
@@ -39,6 +43,13 @@ public class PanelKlienta extends JFrame {
     private DefaultTableModel ModelTabeli;
     private Vector<Produkt> koszyk;
 
+    /**
+     * Tworzy panel dla klienta.
+     * Ustawia tytuł okna, rozmiar i wygląd aplikacji.
+     * Pobiera dane produktów z bazy danych i tworzy tabelę produktów.
+     * Tworzy przyciski i pola tekstowe oraz ustawia dla nich akcje.
+     * @param login login klienta
+     */
     public PanelKlienta(String login) {
         this.login = login;
         setTitle("StoreManagmentSystem");
@@ -101,66 +112,42 @@ public class PanelKlienta extends JFrame {
         buttonEdytujProdukt = new JButton("Edytuj produkt");
         buttonUsunProdukt = new JButton("Usuń produkt");
 
-        filtrButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String text = PoleDoFiltrowania.getText();
-                if (text.trim().length() == 0) {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
-                } else {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text));
-                }
+        filtrButton.addActionListener(e -> {
+            String text = PoleDoFiltrowania.getText();
+            if (text.trim().length() == 0) {
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
+            } else {
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text));
             }
         });
-        buttonDodajDoKoszyka.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int AktwynyWiersz = tabelaProduktow.getSelectedRow();
-                if (AktwynyWiersz >= 0) {
-                    int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
-                    String nazwaProduktu = (String) ModelTabeli.getValueAt(AktwynyWiersz, 1);
-                    double cenaProduktu = (double) ModelTabeli.getValueAt(AktwynyWiersz, 2);
-                    Produkt produkt = new Produkt(produktId, nazwaProduktu, cenaProduktu, "");
-                    dodajProduktDoKoszyka(produkt);
-                    JOptionPane.showMessageDialog(null, "Produkt dodany do koszyka: " + nazwaProduktu);
-                } else {
-                    JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do dodania do koszyka!");
-                }
+        buttonDodajDoKoszyka.addActionListener(e -> {
+            int AktwynyWiersz = tabelaProduktow.getSelectedRow();
+            if (AktwynyWiersz >= 0) {
+                int produktId = (int) ModelTabeli.getValueAt(AktwynyWiersz, 0);
+                String nazwaProduktu = (String) ModelTabeli.getValueAt(AktwynyWiersz, 1);
+                double cenaProduktu = (double) ModelTabeli.getValueAt(AktwynyWiersz, 2);
+                Produkt produkt = new Produkt(produktId, nazwaProduktu, cenaProduktu, "");
+                dodajProduktDoKoszyka(produkt);
+                JOptionPane.showMessageDialog(null, "Produkt dodany do koszyka: " + nazwaProduktu);
+            } else {
+                JOptionPane.showMessageDialog(null, "Proszę zaznaczyć produkt do dodania do koszyka!");
             }
         });
-        buttonZobaczKoszyk.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pokazKoszyk();
-            }
-        });
-        buttonZlozZamowienie.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                zlozZamowienie();
-            }
-        });
+        buttonZobaczKoszyk.addActionListener(e -> pokazKoszyk());
+        buttonZlozZamowienie.addActionListener(e -> zlozZamowienie());
+
 //////////////////////////////////////////////////////// TYLKO DLA ADMINA //////////////////////////////////////////////////////////////////////////////////
-        buttonDodajProdukt.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dodajProdukt();
-                aktualizujTabele();
-            }
+        buttonDodajProdukt.addActionListener(e -> {
+            dodajProdukt();
+            aktualizujTabele();
         });
-        buttonEdytujProdukt.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                edytujProdukt();
-                aktualizujTabele();
-            }
+        buttonEdytujProdukt.addActionListener(e -> {
+            edytujProdukt();
+            aktualizujTabele();
         });
-        buttonUsunProdukt.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                usunProdukt();
-                aktualizujTabele();
-            }
+        buttonUsunProdukt.addActionListener(e -> {
+            usunProdukt();
+            aktualizujTabele();
         });
 
         PanelDlaPrzyciskow.add(PoleDoFiltrowania);
@@ -182,46 +169,29 @@ public class PanelKlienta extends JFrame {
         filtrButtonGroup.add(FiltrCenaButton);
         filtrButtonGroup.add(FiltrOpisButton);
 
-        BrakFiltraButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null);
+        BrakFiltraButton.addActionListener(e -> ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(null));
+        FIltrIdButton.addActionListener(e -> {
+            String text = PoleDoFiltrowania.getText();
+            if (text.trim().length() != 0) {
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 0));
             }
         });
-        FIltrIdButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String text = PoleDoFiltrowania.getText();
-                if (text.trim().length() != 0) {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 0));
-                }
+        FiltrNazwaButton.addActionListener(e -> {
+            String text = PoleDoFiltrowania.getText();
+            if (text.trim().length() != 0) {
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
             }
         });
-        FiltrNazwaButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String text = PoleDoFiltrowania.getText();
-                if (text.trim().length() != 0) {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 1));
-                }
+        FiltrCenaButton.addActionListener(e -> {
+            String text = PoleDoFiltrowania.getText();
+            if (text.trim().length() != 0) {
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 2));
             }
         });
-        FiltrCenaButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String text = PoleDoFiltrowania.getText();
-                if (text.trim().length() != 0) {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter(text, 2));
-                }
-            }
-        });
-        FiltrOpisButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String text = PoleDoFiltrowania.getText();
-                if (text.trim().length() != 0) {
-                    ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 3));
-                }
+        FiltrOpisButton.addActionListener(e -> {
+            String text = PoleDoFiltrowania.getText();
+            if (text.trim().length() != 0) {
+                ((TableRowSorter) tabelaProduktow.getRowSorter()).setRowFilter(RowFilter.regexFilter("(?i)" + text, 3));
             }
         });
 
@@ -250,12 +220,7 @@ public class PanelKlienta extends JFrame {
         menuBar.add(menuProgram);
 
         JMenuItem menuItemZamknij = new JMenuItem("Zamknij");
-        menuItemZamknij.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dispose();
-            }
-        });
+        menuItemZamknij.addActionListener(e -> dispose());
         menuProgram.add(menuItemZamknij);
 
         JMenu menuOperacje = new JMenu("Operacje");
@@ -314,9 +279,21 @@ public class PanelKlienta extends JFrame {
         refreshThread.setDaemon(true);
         refreshThread.start();
     }
+    /**
+     * Metoda dodająca produkt do koszyka.
+     *
+     * @param produkt produkt do dodania
+     */
     private void dodajProduktDoKoszyka(Produkt produkt) {
         koszyk.add(produkt);
     }
+
+    /**
+     * Wyświetla zawartość koszyka
+     * Jeśli koszyk jest pusty, wyświetla odpowiedni komunikat
+     * W przeciwnym razie wyświetla listę produktów w koszyku wraz z ich id i cenami
+     * Pozwala użytkownikowi na usunięcie produktu z koszyka na podstawie podanego indeksu (dla Administraotra)
+     */
     private void pokazKoszyk() {
         if (koszyk.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Koszyk jest pusty.");
@@ -359,6 +336,15 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+    /**
+     * Pobiera id użytkownika na podstawie podanego loginu.
+     * Wykonuje zapytanie do bazy danych w celu pobrania ID użytkownika.
+     * Jeśli użytkownik o podanym loginie istnieje, zwraca jego ID.
+     * W przypadku wystąpienia błędu podczas pobierania danych, wyświetla błędy.
+     *
+     * @param login login użytkownika
+     * @return identyfikator użytkownika (0 jeśli użytkownik nie istnieje lub wystąpił błąd)
+     */
     private int pobierzIdUzytkownika(String login) {
         int id = 0;
         try (Connection connection = DriverManager.getConnection(
@@ -376,7 +362,11 @@ public class PanelKlienta extends JFrame {
         }
         return id;
     }
-
+    /**
+     * Złóż zamówienie na produkty znajdujące się w koszyku.
+     * Jeśli koszyk jest pusty, wyświetla odpowiedni komunikat.
+     * Po złożeniu zamówienia, dodaje informacje o zamówieniu do bazy danych i generuje fakturę.
+     */
     private void zlozZamowienie() {
         if (koszyk.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Koszyk jest pusty. Dodaj produkty przed złożeniem zamówienia.");
@@ -402,6 +392,13 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+
+    /**
+     * Generuje fakturę na podstawie informacji o zamówieniu.
+     * Tworzy plik tekstowy w formacie faktury, zawierający szczegóły zamówienia.
+     * @param idUzytkownika id użytkownika składającego zamówienie
+     * @param koszyk lista produktów w koszyku
+     */
     private void generujFakture(int idUzytkownika, List<Produkt> koszyk) {
         String fakturaId = UUID.randomUUID().toString();
         String nazwaPliku = "faktura_" + fakturaId + ".txt";
@@ -426,6 +423,14 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+    /**
+     * Dodaje nowy produkt do bazy danych.
+     * Użytkownik musi mieć uprawnienia administratora (idUzytkownika = 1).
+     * Wyświetla okno dialogowe z formularzem dodawania produktu.
+     * Po potwierdzeniu dodania, produkt zostaje zapisany w bazie danych.
+     *
+     * @throws SQLException jeśli wystąpi błąd podczas dodawania produktu do bazy danych
+     */
     private void dodajProdukt() {
         if (idUzytkownika != 1) {
             JOptionPane.showMessageDialog(null, "Brak uprawnień do dodawania produktów.");
@@ -463,6 +468,16 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+
+    /**
+     * Edytuje wybrany produkt w bazie danych
+     * Użytkownik musi mieć uprawnienia administratora (idUzytkownika = 1)
+     * Pobiera wybrany produkt z tabeli i wyświetla okno dialogowe z formularzem edycji
+     * Po potwierdzeniu edycji, zmiany są zapisywane w bazie danych
+     * Wyświetla komunikaty informacyjne w przypadku braku uprawnień lub niezaznaczenia produktu do edycji
+     *
+     * @throws SQLException jeśli wystąpi błąd podczas edycji produktu w bazie danych
+     */
     private void edytujProdukt() {
         if (idUzytkownika != 1) {
             JOptionPane.showMessageDialog(null, "Brak uprawnień do dodawania produktów.");
@@ -511,6 +526,16 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+
+    /**
+     * Usuwa wybrany produkt z bazy danych
+     * Użytkownik musi mieć uprawnienia administratora (idUzytkownika = 1)
+     * Pobiera wybrany produkt z tabeli i wyświetla okno dialogowe z potwierdzeniem usunięcia
+     * Po potwierdzeniu usunięcia, produkt jest usuwany z bazy danych
+     * Wyświetla komunikaty informacyjne w przypadku braku uprawnień lub niezaznaczenia produktu do usunięcia
+     *
+     * @throws SQLException jeśli wystąpi błąd podczas usuwania produktu z bazy danych
+     */
     private void usunProdukt() {
         if (idUzytkownika != 1) {
             JOptionPane.showMessageDialog(null, "Brak uprawnień do dodawania produktów.");
@@ -542,6 +567,13 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+
+    /**
+     * Aktualizuje zawartość tabeli produktów na podstawie danych z bazy danych.
+     * Wykonuje zapytanie do bazy danych w celu pobrania wszystkich produktów.
+     * Dane pobrane z bazy są wstawiane do modelu tabeli, a następnie tabela jest odświeżana.
+     * W przypadku wystąpienia błędu podczas pobierania danych, wyświetla błędy.
+     */
     private void aktualizujTabele() {
         ModelTabeli.setRowCount(0);
         try (Connection connection = DriverManager.getConnection(
@@ -569,6 +601,16 @@ public class PanelKlienta extends JFrame {
         }
     }
 
+
+    /**
+     * Ustawia wygląd aplikacji na Nimbus Look and Feel, który jest według mnie lepszy wizualnie :).
+     * Jeśli Nimbus Look and Feel jest "dostępny", ustawia go jako domyślny wygląd aplikacji.
+     * Jeśli wystąpią błędy podczas ustawiania wyglądu, rejestruje je i wyświetla błędy.
+     * @throws ClassNotFoundException           jeśli klasa Look and Feel nie zostanie znaleziona
+     * @throws InstantiationException           jeśli nie można zainicjalizować Look and Feel
+     * @throws IllegalAccessException           jeśli dostęp do Look and Feel jest zabroniony
+     * @throws javax.swing.UnsupportedLookAndFeelException jeśli Look and Feel nie jest obsługiwane
+     */
     public void FajniejszyWyglad() {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {

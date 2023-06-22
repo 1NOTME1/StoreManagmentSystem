@@ -1,6 +1,14 @@
 import java.sql.*;
-
+/**
+ * Klasa ProduktDAO dostarcza metod CRUD (Create, Read, Update, Delete) dla obiektów klasy Produkt z wykorzystaniem bazy danych.
+ */
 public class ProduktDAO extends GenericDAO<Produkt> {
+    /**
+     * Metoda do dodawania nowego produktu do bazy danych.
+     *
+     * @param produkt obiekt Produkt do dodania
+     * @param userId  id użytkownika dodającego produkt
+     */
     @Override
     public void dodaj(Produkt produkt, int userId) {
         try (Connection connection = getConnection()) {
@@ -14,12 +22,19 @@ public class ProduktDAO extends GenericDAO<Produkt> {
             if (result == 1) {
                 System.out.println("Produkt został dodany");
             } else {
-                System.out.println("Nie udało się dodać produktu");
+                System.out.println("Nie udało się dodać produktu!");
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Metoda do aktualizacji istniejącego produktu w bazie danych.
+     *
+     * @param produkt obiekt Produkt do aktualizacji
+     * @param userId  id użytkownika aktualizującego produkt
+     */
     @Override
     public void aktualizuj(Produkt produkt, int userId) {
         try (Connection conn = getConnection()) {
@@ -35,6 +50,13 @@ public class ProduktDAO extends GenericDAO<Produkt> {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Metoda do usuwania istniejącego produktu z bazy danych.
+     *
+     * @param produktId id produktu do usunięcia
+     * @param userId    id użytkownika usuwającego produkt
+     */
     @Override
     public void usun(int produktId, int userId) {
         try (Connection connection = getConnection()) {
@@ -53,6 +75,13 @@ public class ProduktDAO extends GenericDAO<Produkt> {
             e.printStackTrace();
         }
     }
+    /**
+     * Metoda do pobierania produktu z bazy danych na podstawie id.
+     *
+     * @param produktId id produktu do pobrania
+     * @param userId id użytkownika pobierającego produkt
+     * @return zwraca obiekt Produkt, jeżeli produkt o podanym id istnieje, w przeciwnym wypadku null
+     */
     @Override
     public Produkt get(int produktId, int userId) {
         Produkt produkt = null;

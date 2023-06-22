@@ -1,12 +1,18 @@
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
-
+/**
+ * Klasa Klient reprezentuje okno logowania użytkownika.
+ * Umożliwia logowanie i rejestrację nowych użytkowników.
+ */
 public class Klient extends JFrame {
     private JTextField poleLogin;
     private JPasswordField poleHaslo;
     private String login, haslo;
 
+    /**
+     * Tworzony jest nowy obiekt Klienta który inicjuje interfejs użytkownika.
+     */
     public Klient() {
         Klient self = this;
         setTitle("Panel logowania");
@@ -113,7 +119,12 @@ public class Klient extends JFrame {
             }
         });
     }
-
+    /**
+     * Sprawdza, czy dane logowania są prawidłowe.
+     * @param login login użytkownika.
+     * @param haslo hasło użytkownika.
+     * @return zwraca prawdę, jeśli dane są poprawne, jeśli nie to fałsz.
+     */
     private boolean sprawdzDaneLogowania(String login, String haslo) {
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/storemanagmentsystemdb", "root", "root");
@@ -134,6 +145,12 @@ public class Klient extends JFrame {
         return false;
     }
 
+    /**
+     * Rejestrowanie nowego użytkownika.
+     * @param login login nowego użytkownika.
+     * @param haslo hasło nowego użytkownika.
+     * @return zwraca prawdę, jeśli rejestracja powiodła się, w przeciwnym razie zwraca fałsz.
+     */
     private boolean rejestruj(String login, String haslo) {
         if (login == null || login.isEmpty() || haslo == null || haslo.isEmpty()) {
             JOptionPane.showMessageDialog(null, "Login i hasło nie mogą być puste.");
@@ -174,7 +191,9 @@ public class Klient extends JFrame {
         }
     }
 
-
+    /**
+     * Metoda uruchamiająca interfejs użytkownika.
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             Klient klient = new Klient();
