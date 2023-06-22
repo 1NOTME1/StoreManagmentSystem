@@ -36,9 +36,9 @@ public class PanelKlienta extends JFrame {
     JLabel filterLabel = new JLabel("Filtry:");
     JRadioButton BrakFiltraButton = new JRadioButton("Odfiltruj", true);
     JRadioButton FIltrIdButton = new JRadioButton("ID");
-    JRadioButton FiltrNazwaButton = new JRadioButton("Nazwie");
-    JRadioButton FiltrCenaButton = new JRadioButton("Cenia");
-    JRadioButton FiltrOpisButton = new JRadioButton("Opisie");
+    JRadioButton FiltrNazwaButton = new JRadioButton("Nazwa");
+    JRadioButton FiltrCenaButton = new JRadioButton("Cena");
+    JRadioButton FiltrOpisButton = new JRadioButton("Opis");
 
     private DefaultTableModel ModelTabeli;
     private Vector<Produkt> koszyk;
